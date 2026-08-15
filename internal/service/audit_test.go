@@ -57,6 +57,37 @@ func TestAuditRespectsCancelledContext(t *testing.T) {
 	}
 }
 
+func TestAuditCountsOnlyAcceptedShipmentsAgainstRouteCapacity(t *testing.T) {
+	now := time.Date(2026, 8, 15, 9, 0, 0, 0, time.UTC)
+	plan := domain.Plan{
+		Routes: []domain.Route{{ID: "north", Capacity: 2}},
+		Shipments: []domain.Shipment{
+			{ID: "accepted-first", RouteID: "north", HoldUntil: &now},
+			{ID: "blocked", RouteID: "north", Labels: []string{"quarantine"}, HoldUntil: &now},
+			{ID: "accepted-after-block", RouteID: "north", HoldUntil: &now},
+			{ID: "rejected-at-capacity", RouteID: "north", HoldUntil: &now},
+		},
+	}
+	auditor := service.NewAuditor(store.NewMemory(plan), func() time.Time { return now })
+
+	report, err := auditor.Audit(context.Background())
+	if err != nil {
+		t.Fatalf("Audit() error = %v", err)
+	}
+	if got := assignmentIDs(report); !reflect.DeepEqual([]string{"accepted-first", "accepted-after-block"}, got) {
+		t.Fatalf("assignment ids = %#v, want [accepted-first accepted-after-block]", got)
+	}
+	if want := []domain.Rejection{
+		{ShipmentID: "blocked", Reason: "shipment is blocked"},
+		{ShipmentID: "rejected-at-capacity", Reason: "route capacity is unavailable"},
+	}; !reflect.DeepEqual(want, report.Rejections) {
+		t.Fatalf("rejections = %#v, want %#v", report.Rejections, want)
+	}
+	if want := []domain.RouteLoad{{RouteID: "north", Used: 2, Capacity: 2}}; !reflect.DeepEqual(want, report.RouteLoads) {
+		t.Fatalf("route loads = %#v, want %#v", report.RouteLoads, want)
+	}
+}
+
 func assignmentIDs(report domain.Report) []string {
 	ids := make([]string, 0, len(report.Assignments))
 	for _, assignment := range report.Assignments {

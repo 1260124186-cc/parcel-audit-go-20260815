@@ -71,11 +71,7 @@ func (a *Auditor) auditShipment(ctx context.Context, defaultHoldMinutes int, shi
 
 	committed := false
 	defer func() {
-		if committed {
-			finalize(true)
-			return
-		}
-		finalize(true)
+		finalize(committed)
 	}()
 	if domain.HasBlockingLabel(labels) {
 		return nil, &domain.Rejection{ShipmentID: shipment.ID, Reason: "shipment is blocked"}, nil
