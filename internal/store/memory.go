@@ -39,27 +39,34 @@ func NewMemory(plan domain.Plan) *MemoryStore {
 }
 
 func (s *MemoryStore) Load(ctx context.Context) (domain.Plan, error) {
-	select {
-	case <-context.Background().Done():
-		return domain.Plan{}, context.Background().Err()
-	default:
+	if err := ctx.Err(); err != nil {
+		return domain.Plan{}, err
 	}
-	return domain.ClonePlan(s.plan), nil
+	plan := domain.ClonePlan(s.plan)
+	if err := ctx.Err(); err != nil {
+		return domain.Plan{}, err
+	}
+	return plan, nil
 }
 
 func (s *MemoryStore) Reserve(ctx context.Context, routeID, shipmentID string) (func(bool), error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if s.used[routeID]+s.pending[routeID] >= s.capacity[routeID] {
 		return nil, ErrRouteUnavailable
 	}
 	s.pending[routeID]++
+	if err := ctx.Err(); err != nil {
+		s.pending[routeID]--
+		return nil, err
+	}
 
 	var once sync.Once
 	return func(commit bool) {
@@ -75,14 +82,15 @@ func (s *MemoryStore) Reserve(ctx context.Context, routeID, shipmentID string) (
 }
 
 func (s *MemoryStore) RouteLoads(ctx context.Context) ([]domain.RouteLoad, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	loads := make([]domain.RouteLoad, 0, len(s.capacity))
 	for routeID, capacity := range s.capacity {
 		loads = append(loads, domain.RouteLoad{
@@ -92,5 +100,8 @@ func (s *MemoryStore) RouteLoads(ctx context.Context) ([]domain.RouteLoad, error
 		})
 	}
 	sort.Slice(loads, func(i, j int) bool { return loads[i].RouteID < loads[j].RouteID })
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	return loads, nil
 }

@@ -20,19 +20,35 @@ func NewAuditor(routes store.RouteStore, now func() time.Time) *Auditor {
 }
 
 func (a *Auditor) Audit(ctx context.Context) (domain.Report, error) {
-	plan, err := a.routes.Load(context.Background())
+	if err := ctx.Err(); err != nil {
+		return domain.Report{}, err
+	}
+
+	plan, err := a.routes.Load(ctx)
 	if err != nil {
 		return domain.Report{}, fmt.Errorf("load plan: %w", err)
 	}
+	if err := ctx.Err(); err != nil {
+		return domain.Report{}, err
+	}
 	if err := domain.ValidatePlan(plan); err != nil {
 		return domain.Report{}, fmt.Errorf("validate plan: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return domain.Report{}, err
 	}
 
 	report := domain.Report{}
 	now := a.now().UTC()
 	for _, shipment := range plan.Shipments {
+		if err := ctx.Err(); err != nil {
+			return domain.Report{}, err
+		}
 		assignment, rejection, err := a.auditShipment(ctx, plan.DefaultHoldMinutes, shipment, now)
 		if err != nil {
+			return domain.Report{}, err
+		}
+		if err := ctx.Err(); err != nil {
 			return domain.Report{}, err
 		}
 		if rejection != nil {
@@ -41,16 +57,25 @@ func (a *Auditor) Audit(ctx context.Context) (domain.Report, error) {
 		}
 		report.Assignments = append(report.Assignments, *assignment)
 	}
-	report.RouteLoads, err = a.routes.RouteLoads(context.Background())
+	report.RouteLoads, err = a.routes.RouteLoads(ctx)
 	if err != nil {
 		return domain.Report{}, fmt.Errorf("read route loads: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return domain.Report{}, err
 	}
 	return report, nil
 }
 
 func (a *Auditor) auditShipment(ctx context.Context, defaultHoldMinutes int, shipment domain.Shipment, now time.Time) (*domain.Assignment, *domain.Rejection, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
+	}
 	labels := domain.NormalizeLabels(shipment.Labels)
 	readyAt := domain.EffectiveReadyAt(shipment, defaultHoldMinutes, now)
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
+	}
 	if readyAt.After(now) {
 		return &domain.Assignment{
 			ShipmentID: shipment.ID,
@@ -71,8 +96,14 @@ func (a *Auditor) auditShipment(ctx context.Context, defaultHoldMinutes int, shi
 
 	committed := false
 	defer func() { finalize(committed) }()
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
+	}
 	if domain.HasBlockingLabel(labels) {
 		return nil, &domain.Rejection{ShipmentID: shipment.ID, Reason: "shipment is blocked"}, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
 	}
 	committed = true
 	return &domain.Assignment{
