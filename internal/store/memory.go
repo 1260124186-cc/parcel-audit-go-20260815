@@ -62,12 +62,13 @@ func (s *MemoryStore) Reserve(ctx context.Context, routeID, shipmentID string) (
 	s.pending[routeID]++
 
 	var once sync.Once
+	// commit 为 true 表示确认接收，预留转为正式占用；为 false 表示放弃预留，不占用容量。
 	return func(commit bool) {
 		once.Do(func() {
 			s.mu.Lock()
 			defer s.mu.Unlock()
 			s.pending[routeID]--
-			if !commit {
+			if commit {
 				s.used[routeID]++
 			}
 		})

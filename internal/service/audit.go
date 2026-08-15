@@ -69,13 +69,10 @@ func (a *Auditor) auditShipment(ctx context.Context, defaultHoldMinutes int, shi
 		return nil, nil, fmt.Errorf("reserve %s: %w", shipment.ID, err)
 	}
 
+	// 仅成功接收的货件才占用容量；被阻塞的货件放弃预留，不留容量占用。
 	committed := false
 	defer func() {
-		if committed {
-			finalize(true)
-			return
-		}
-		finalize(true)
+		finalize(committed)
 	}()
 	if domain.HasBlockingLabel(labels) {
 		return nil, &domain.Rejection{ShipmentID: shipment.ID, Reason: "shipment is blocked"}, nil
