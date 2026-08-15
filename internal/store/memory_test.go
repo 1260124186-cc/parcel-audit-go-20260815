@@ -23,4 +23,13 @@ func TestMemoryStoreOwnsPlanSnapshot(t *testing.T) {
 	if want := []string{"cold"}; !reflect.DeepEqual(want, got.Shipments[0].Labels) {
 		t.Fatalf("stored labels = %#v, want %#v", got.Shipments[0].Labels, want)
 	}
+
+	got.Shipments[0].Labels[0] = "returned-plan-change"
+	reloaded, err := memory.Load(context.Background())
+	if err != nil {
+		t.Fatalf("Load() after changing returned plan error = %v", err)
+	}
+	if want := []string{"cold"}; !reflect.DeepEqual(want, reloaded.Shipments[0].Labels) {
+		t.Fatalf("stored labels after returned plan change = %#v, want %#v", reloaded.Shipments[0].Labels, want)
+	}
 }

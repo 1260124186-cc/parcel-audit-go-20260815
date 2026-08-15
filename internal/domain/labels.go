@@ -6,7 +6,7 @@ import (
 )
 
 func NormalizeLabels(labels []string) []string {
-	normalized := labels[:0]
+	normalized := make([]string, 0, len(labels))
 	for _, label := range labels {
 		label = strings.ToLower(strings.TrimSpace(label))
 		if label != "" {
@@ -15,13 +15,13 @@ func NormalizeLabels(labels []string) []string {
 	}
 
 	sort.Strings(normalized)
-	result := normalized[:0]
+	result := make([]string, 0, len(normalized))
 	for _, label := range normalized {
 		if len(result) == 0 || result[len(result)-1] != label {
 			result = append(result, label)
 		}
 	}
-	return append([]string(nil), result...)
+	return result
 }
 
 func HasBlockingLabel(labels []string) bool {

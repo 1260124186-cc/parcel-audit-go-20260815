@@ -56,6 +56,32 @@ func TestAuditRespectsCancelledContext(t *testing.T) {
 	}
 }
 
+func TestAuditCanReusePlanWithoutChangingShipmentLabels(t *testing.T) {
+	now := time.Date(2026, 8, 15, 9, 0, 0, 0, time.UTC)
+	plan := domain.Plan{
+		DefaultHoldMinutes: 15,
+		Routes:             []domain.Route{{ID: "north", Capacity: 1}},
+		Shipments: []domain.Shipment{
+			{ID: "p1", RouteID: "north", Labels: []string{" Fragile ", "cold", "fragile", ""}},
+		},
+	}
+	auditor := service.NewAuditor(store.NewMemory(plan), func() time.Time { return now })
+
+	for i := 0; i < 2; i++ {
+		report, err := auditor.Audit(context.Background())
+		if err != nil {
+			t.Fatalf("Audit() run %d error = %v", i+1, err)
+		}
+		if want := []string{"cold", "fragile"}; !reflect.DeepEqual(want, report.Assignments[0].Labels) {
+			t.Fatalf("Audit() run %d labels = %#v, want %#v", i+1, report.Assignments[0].Labels, want)
+		}
+	}
+
+	if want := []string{" Fragile ", "cold", "fragile", ""}; !reflect.DeepEqual(want, plan.Shipments[0].Labels) {
+		t.Fatalf("plan labels changed = %#v, want %#v", plan.Shipments[0].Labels, want)
+	}
+}
+
 func assignmentIDs(report domain.Report) []string {
 	ids := make([]string, 0, len(report.Assignments))
 	for _, assignment := range report.Assignments {

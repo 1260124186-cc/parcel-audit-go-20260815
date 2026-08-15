@@ -26,6 +26,7 @@ type MemoryStore struct {
 }
 
 func NewMemory(plan domain.Plan) *MemoryStore {
+	plan = domain.ClonePlan(plan)
 	capacity := make(map[string]int, len(plan.Routes))
 	for _, route := range plan.Routes {
 		capacity[route.ID] = route.Capacity
