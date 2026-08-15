@@ -25,7 +25,7 @@ func (a *Auditor) Audit(ctx context.Context) (domain.Report, error) {
 		return domain.Report{}, fmt.Errorf("load plan: %w", err)
 	}
 	if err := domain.ValidatePlan(plan); err != nil {
-		return domain.Report{}, fmt.Errorf("validate plan: %v", err)
+		return domain.Report{}, fmt.Errorf("validate plan: %w", err)
 	}
 
 	report := domain.Report{}
