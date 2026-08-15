@@ -31,7 +31,7 @@ func NewMemory(plan domain.Plan) *MemoryStore {
 		capacity[route.ID] = route.Capacity
 	}
 	return &MemoryStore{
-		plan:     domain.ClonePlan(plan),
+		plan:     plan,
 		used:     make(map[string]int, len(plan.Routes)),
 		pending:  make(map[string]int, len(plan.Routes)),
 		capacity: capacity,
