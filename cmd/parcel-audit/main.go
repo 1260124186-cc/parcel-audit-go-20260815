@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -45,7 +46,8 @@ func run(ctx context.Context, input io.Reader, output io.Writer) error {
 	auditor := service.NewAuditor(store.NewMemory(plan), time.Now)
 	report, err := auditor.Audit(ctx)
 	if err != nil {
-		if validation, ok := err.(*domain.ValidationError); ok {
+		var validation *domain.ValidationError
+		if errors.As(err, &validation) {
 			return fmt.Errorf("validation error: %s", validation)
 		}
 		return fmt.Errorf("audit failed: %w", err)
