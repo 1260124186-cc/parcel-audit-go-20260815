@@ -6,7 +6,7 @@ import (
 )
 
 func NormalizeLabels(labels []string) []string {
-	normalized := make([]string, 0, len(labels))
+	normalized := labels[:0]
 	for _, label := range labels {
 		label = strings.ToLower(strings.TrimSpace(label))
 		if label != "" {
