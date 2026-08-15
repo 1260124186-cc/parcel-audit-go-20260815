@@ -51,6 +51,9 @@ func (a *Auditor) Audit(ctx context.Context) (domain.Report, error) {
 func (a *Auditor) auditShipment(ctx context.Context, defaultHoldMinutes int, shipment domain.Shipment, now time.Time) (*domain.Assignment, *domain.Rejection, error) {
 	labels := domain.NormalizeLabels(shipment.Labels)
 	readyAt := domain.EffectiveReadyAt(shipment, defaultHoldMinutes, now)
+	if shipment.HoldUntil == nil {
+		readyAt = now
+	}
 	if readyAt.After(now) {
 		return &domain.Assignment{
 			ShipmentID: shipment.ID,
