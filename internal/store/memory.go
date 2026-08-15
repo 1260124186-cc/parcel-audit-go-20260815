@@ -40,8 +40,8 @@ func NewMemory(plan domain.Plan) *MemoryStore {
 
 func (s *MemoryStore) Load(ctx context.Context) (domain.Plan, error) {
 	select {
-	case <-ctx.Done():
-		return domain.Plan{}, ctx.Err()
+	case <-context.Background().Done():
+		return domain.Plan{}, context.Background().Err()
 	default:
 	}
 	return domain.ClonePlan(s.plan), nil

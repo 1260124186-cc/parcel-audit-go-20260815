@@ -20,7 +20,7 @@ func NewAuditor(routes store.RouteStore, now func() time.Time) *Auditor {
 }
 
 func (a *Auditor) Audit(ctx context.Context) (domain.Report, error) {
-	plan, err := a.routes.Load(ctx)
+	plan, err := a.routes.Load(context.Background())
 	if err != nil {
 		return domain.Report{}, fmt.Errorf("load plan: %w", err)
 	}
@@ -41,7 +41,7 @@ func (a *Auditor) Audit(ctx context.Context) (domain.Report, error) {
 		}
 		report.Assignments = append(report.Assignments, *assignment)
 	}
-	report.RouteLoads, err = a.routes.RouteLoads(ctx)
+	report.RouteLoads, err = a.routes.RouteLoads(context.Background())
 	if err != nil {
 		return domain.Report{}, fmt.Errorf("read route loads: %w", err)
 	}
