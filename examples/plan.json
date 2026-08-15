@@ -1,0 +1,10 @@
+{
+  "default_hold_minutes": 30,
+  "routes": [
+    {"id": "tokyo-north", "capacity": 2},
+    {"id": "tokyo-south", "capacity": 1}
+  ],
+  "shipments": [
+    {"id": "parcel-101", "route_id": "tokyo-north", "labels": ["fragile", "cold"]}
+  ]
+}

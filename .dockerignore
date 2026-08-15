@@ -1,0 +1,12 @@
+.git
+.gitignore
+.codex
+private
+registries
+*.patch
+*.diff
+bin
+coverage.out
+*.log
+*.tmp
+**/.DS_Store
