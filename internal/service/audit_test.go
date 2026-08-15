@@ -34,6 +34,9 @@ func TestAuditAppliesHoldAndTracksCommittedReservations(t *testing.T) {
 	if report.Assignments[0].State != "held" || !report.Assignments[0].ReadyAt.Equal(now.Add(15*time.Minute)) {
 		t.Fatalf("missing hold was not applied: %#v", report.Assignments[0])
 	}
+	if report.Assignments[1].State != "accepted" || !report.Assignments[1].ReadyAt.Equal(now) {
+		t.Fatalf("explicit hold time was not preserved: %#v", report.Assignments[1])
+	}
 	if got := report.Assignments[1].Labels; !reflect.DeepEqual([]string{"fragile"}, got) {
 		t.Fatalf("normalized labels = %#v, want [fragile]", got)
 	}
