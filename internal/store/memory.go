@@ -67,7 +67,7 @@ func (s *MemoryStore) Reserve(ctx context.Context, routeID, shipmentID string) (
 			s.mu.Lock()
 			defer s.mu.Unlock()
 			s.pending[routeID]--
-			if commit {
+			if !commit {
 				s.used[routeID]++
 			}
 		})

@@ -20,6 +20,7 @@ func TestAuditAppliesHoldAndTracksCommittedReservations(t *testing.T) {
 			{ID: "held", RouteID: "north", Labels: []string{"Cold"}},
 			{ID: "accepted", RouteID: "north", Labels: []string{"fragile", "fragile"}, HoldUntil: &now},
 			{ID: "blocked", RouteID: "north", Labels: []string{"quarantine"}, HoldUntil: &now},
+			{ID: "accepted-after", RouteID: "north", Labels: []string{"bulk"}, HoldUntil: &now},
 		},
 	}
 	auditor := service.NewAuditor(store.NewMemory(plan), func() time.Time { return now })
@@ -28,8 +29,8 @@ func TestAuditAppliesHoldAndTracksCommittedReservations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Audit() error = %v", err)
 	}
-	if got := assignmentIDs(report); !reflect.DeepEqual([]string{"held", "accepted"}, got) {
-		t.Fatalf("assignment ids = %#v, want [held accepted]", got)
+	if got := assignmentIDs(report); !reflect.DeepEqual([]string{"held", "accepted", "accepted-after"}, got) {
+		t.Fatalf("assignment ids = %#v, want [held accepted accepted-after]", got)
 	}
 	if report.Assignments[0].State != "held" || !report.Assignments[0].ReadyAt.Equal(now.Add(15*time.Minute)) {
 		t.Fatalf("missing hold was not applied: %#v", report.Assignments[0])
@@ -40,7 +41,7 @@ func TestAuditAppliesHoldAndTracksCommittedReservations(t *testing.T) {
 	if want := []domain.Rejection{{ShipmentID: "blocked", Reason: "shipment is blocked"}}; !reflect.DeepEqual(want, report.Rejections) {
 		t.Fatalf("rejections = %#v, want %#v", report.Rejections, want)
 	}
-	if want := []domain.RouteLoad{{RouteID: "north", Used: 1, Capacity: 2}}; !reflect.DeepEqual(want, report.RouteLoads) {
+	if want := []domain.RouteLoad{{RouteID: "north", Used: 2, Capacity: 2}}; !reflect.DeepEqual(want, report.RouteLoads) {
 		t.Fatalf("route loads = %#v, want %#v", report.RouteLoads, want)
 	}
 }
